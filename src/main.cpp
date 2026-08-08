@@ -1,5 +1,6 @@
 #include "menu.hpp"
 #include <iostream>
+#include <functional>
 
 #include <map>
 

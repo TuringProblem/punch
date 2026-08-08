@@ -1,6 +1,6 @@
+
 #ifndef MENU_HPP
 #define MENU_HPP
-#endif
 
 #include <iostream>
 
@@ -42,3 +42,5 @@ void screenHandler(const int &num) {
     break;
   }
 }
+
+#endif
