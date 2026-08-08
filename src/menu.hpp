@@ -32,11 +32,12 @@ const auto lineCreator = [](const std::string &word) {
 
 void screenHandler(const int &num) {
   switch (num) {
-
   case 1:
     lineCreator("Welcome to PUNCH menu!");
     break;
-
+  case 2:
+    lineCreator("");
+    break;
   default:
     break;
   }

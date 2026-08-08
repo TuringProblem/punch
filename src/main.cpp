@@ -14,20 +14,14 @@
 // mmmm... what do I want to map...  the command "--start"
 int main(int argc, char **argv) {
   std::map<std::string, std::function<void(const int &)>> commands = {
-      {"--start",
-       [](const int &num) {
-         std::cout << "You've been punched by the falcon!" << std::endl;
-         std::cout << "Designed by TuringProblem\n\n" << std::endl;
-         screenHandler(num);
-       }},
+      {"--start", [](const int &num) { screenHandler(num); }},
+      {"--help", [](const int &num) { screenHandler(num); }},
   };
 
   auto startCaller = [&](const std::string &message) {
-    if (message == "--start") {
-      commands["--start"](1);
-    } else {
-      lineCreator(
-          "use --help | --h | --commands | --c to see list of commands");
+    auto it = commands.find(message);
+    if (it != commands.end()) {
+      it->second(1);
     }
   };
 
