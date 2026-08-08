@@ -12,16 +12,16 @@
  **/
 
 // mmmm... what do I want to map...  the command "--start"
-int main(int argc, char **argv) {
-  std::map<std::string, std::function<void(const int &)>> commands = {
-      {"--start",
-       [](const int &num) {
-         std::cout << "You've been punched by the falcon!" << std::endl;
-         std::cout << "Designed by TuringProblem\n\n" << std::endl;
-         screenHandler(num);
-       }},
-  };
+std::map<std::string, std::function<void(const int &)>> commands = {
+    {"--start",
+     [](const int &num) {
+       std::cout << "You've been punched by the falcon!" << std::endl;
+       std::cout << "Designed by TuringProblem\n\n" << std::endl;
+       screenHandler(1);
+     }},
+};
 
+int main(int argc, char **argv) {
   auto startCaller = [&](const std::string &message) {
     if (message == "--start") {
       commands["--start"](1);
