@@ -1,6 +1,5 @@
 #include "menu.hpp"
 #include <iostream>
-#include <functional>
 
 #include <map>
 
@@ -14,15 +13,15 @@
 
 // mmmm... what do I want to map...  the command "--start"
 int main(int argc, char **argv) {
-  std::map<std::string, std::function<void(const int &)>> commands = {
-      {"--start", [](const int &num) { screenHandler(num); }},
-      {"--help", [](const int &num) { screenHandler(num); }},
+  std::map<std::string, void (*)()> commands = {
+      {"--start", []() { screenHandler(1); }},
+      {"--help", []() { screenHandler(2); }},
   };
 
   auto startCaller = [&](const std::string &message) {
     auto it = commands.find(message);
     if (it != commands.end()) {
-      it->second(1);
+      it->second();
     }
   };
 

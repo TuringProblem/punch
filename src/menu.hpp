@@ -36,7 +36,7 @@ void screenHandler(const int &num) {
     lineCreator("Welcome to PUNCH menu!");
     break;
   case 2:
-    lineCreator("");
+    lineCreator("This is the help Menu");
     break;
   default:
     break;
