@@ -3,6 +3,7 @@
 #define MENU_HPP
 
 #include <chrono>
+#include <format>
 #include <iostream>
 #include <thread>
 
@@ -33,25 +34,43 @@ const auto lineCreator = [](const std::string &word) {
   std::cout << "\n";
 };
 
+const auto listOptions = [](const std::vector<std::string> &options) {
+  int counter = 0;
+  for (const auto &option : options) {
+    std::cout << ++counter << ". " << option << "\n";
+  }
+};
 const auto clearScreen = []() { std::cout << "\033[2J\033[1;1H"; };
+const auto displayModes = [](const std::string &userName) {
+  clearScreen();
+
+  std::string values =
+      std::format("Please select the following *{}*: ", userName);
+  lineCreator(values);
+  std::vector<std::string> options = {"Play", "Options", "Quit"};
+  listOptions(options);
+};
 
 void runStart(const std::string &devtag) {
   std::cout << "\n\n" << devtag << "\n\n";
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   clearScreen();
-  // now since this game is a poker game - we need to figure out what type of
-  // game the user wants to play
-  std::cout << "Please Enter Org: ";
-  std::string orgName;
-  std::getline(std::cin, orgName);
-
+  std::cout << "Please enter your name: ";
+  std::string userName;
+  std::getline(std::cin, userName);
   if (std::cin.fail()) {
     std::cout << "\n\nError: Invalid Org Name\n\n";
     return;
   }
+
+  displayModes(userName);
 }
 
+inline void displayGame() {
+  lineCreator("Please Select the following: ");
+  std::cout << "\n";
+}
 inline void screenHandler(const MenuState &menu) {
   switch (menu) {
   case MenuState::START:
