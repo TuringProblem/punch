@@ -14,8 +14,9 @@
 // mmmm... what do I want to map...  the command "--start"
 int main(int argc, char **argv) {
   std::map<std::string, void (*)()> commands = {
-      {"--start", []() { screenHandler(1); }},
-      {"--help", []() { screenHandler(2); }},
+      {"--start", []() { screenHandler(MenuState::START); }},
+      {"--help", []() { screenHandler(MenuState::HELP); }},
+      {"--version", []() { screenHandler(MenuState::VERSION); }},
   };
 
   auto startCaller = [&](const std::string &message) {
