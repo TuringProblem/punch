@@ -18,14 +18,4 @@ struct Player {
   int blocks;
 };
 
-inline auto operator<<(std::ostream &os, const Player &player)
-    -> std::ostream & {
-  os << "Player Name: " << player.name << "\n";
-  os << "Hand: " << player.hand << "\n";
-  os << "Health: " << player.health << "\n";
-  os << "Has Blocks: " << player.hasBlocks << "\n";
-  os << "Blocks: " << player.blocks << "\n";
-  return os;
-}
-
 #endif // PLAYER_HPP
