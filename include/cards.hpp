@@ -4,7 +4,13 @@
 #include <map>
 /**
  * @author: { @Override } : 20260816 00:56
+ * --------------------------------------
+ *
+ *
+ * there are 52 cards in a deck - and using 4 decks per table
+ *
  **/
+
 enum class CardType {
   ACE,
   TWO,

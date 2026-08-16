@@ -12,17 +12,11 @@
 
 /**
  *
- *
- *
  **/
 enum class MenuState {
   START,
   HELP,
   VERSION,
-};
-
-struct Something {
-  std::string orgName;
 };
 
 const auto lineCreator = [](const std::string &word) {
@@ -46,6 +40,8 @@ void runStart(const std::string &devtag) {
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   clearScreen();
+  // now since this game is a poker game - we need to figure out what type of
+  // game the user wants to play
   std::cout << "Please Enter Org: ";
   std::string orgName;
   std::getline(std::cin, orgName);
