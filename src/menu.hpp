@@ -2,6 +2,7 @@
 #ifndef MENU_HPP
 #define MENU_HPP
 
+#include "cards.hpp"
 #include <chrono>
 #include <format>
 #include <iostream>
@@ -11,14 +12,13 @@
  * @author: { @Override } : 20260808 11:47
  **/
 
-/**
- *
- **/
 enum class MenuState {
   START,
   HELP,
   VERSION,
 };
+
+const auto clearScreen = []() { std::cout << "\033[2J\033[1;1H"; };
 
 const auto lineCreator = [](const std::string &word) {
   size_t size = word.size();
@@ -40,7 +40,7 @@ const auto listOptions = [](const std::vector<std::string> &options) {
     std::cout << ++counter << ". " << option << "\n";
   }
 };
-const auto clearScreen = []() { std::cout << "\033[2J\033[1;1H"; };
+
 const auto displayModes = [](const std::string &userName) {
   clearScreen();
 
@@ -63,8 +63,30 @@ void runStart(const std::string &devtag) {
     std::cout << "\n\nError: Invalid Org Name\n\n";
     return;
   }
-
   displayModes(userName);
+  int choice;
+  std::cin >> choice;
+  if (std::cin.fail()) {
+    std::cout << "\n\nError: Invalid Choice\n\n";
+    return;
+  }
+  switch (choice) {
+  case 1:
+    std::cout << "Playing...\n";
+    break;
+  case 2:
+    std::cout << "Options...\n";
+    break;
+  case 3:
+    std::cout << "Goodbye!\n";
+    // here I'm goign to show a card just to see what it's looking like
+    std::cout << getCardDesign(CardType::ACE, SuitType::CLUBS) << " "
+              << getCardDesign(CardType::KING, SuitType::DIAMONDS) << std::endl;
+    exit(0);
+    break;
+  default:
+    break;
+  }
 }
 
 inline void displayGame() {
