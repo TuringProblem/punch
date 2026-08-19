@@ -1,9 +1,10 @@
 #ifndef CARDS_HPP
 #define CARDS_HPP
 
-#include <map>
+#include <cstdlib>
 #include <random>
-#include <string>
+#include <string_view>
+#include <vector>
 /**
  * @author: { @Override } : 20260816 00:56
  * --------------------------------------
@@ -37,8 +38,8 @@ enum class SuitType {
 };
 
 // ... okay I want to use 🂡 🂱 🃁 🃑
-constexpr std::string getCardDesign(const CardType &cardType,
-                                    const SuitType &suitType) noexcept {
+constexpr std::string_view getCardDesign(CardType cardType,
+                                         SuitType suitType) noexcept {
   if (suitType == SuitType::CLUBS) {
     switch (cardType) {
     case CardType::ACE:
@@ -216,6 +217,24 @@ constexpr std::string getCardDesign(const CardType &cardType,
   }
 
   return "";
+}
+
+inline std::mt19937 &rng() {
+  static thread_local std::mt19937 gen{std::random_device{}()};
+  return gen;
+}
+
+inline std::vector<std::string_view> getRandomPair() {
+  std::uniform_int_distribution<int> suitDis(0, 3);
+  std::uniform_int_distribution<int> cardDis(0, 12);
+
+  std::vector<std::string_view> cards;
+  cards.reserve(2);
+  for (int i = 0; i < 2; ++i) {
+    cards.push_back(getCardDesign(static_cast<CardType>(cardDis(rng())),
+                                  static_cast<SuitType>(suitDis(rng()))));
+  }
+  return cards;
 }
 
 #endif

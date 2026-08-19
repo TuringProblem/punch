@@ -77,13 +77,13 @@ void runStart(const std::string &devtag) {
   case 2:
     std::cout << "Options...\n";
     break;
-  case 3:
+  case 3: {
     std::cout << "Goodbye!\n";
-    // here I'm goign to show a card just to see what it's looking like
-    std::cout << getCardDesign(CardType::ACE, SuitType::CLUBS) << " "
-              << getCardDesign(CardType::KING, SuitType::DIAMONDS) << std::endl;
+    const auto cards = getRandomPair();
+    std::cout << cards[0] << " " << cards[1] << std::endl;
     exit(0);
     break;
+  }
   default:
     break;
   }
