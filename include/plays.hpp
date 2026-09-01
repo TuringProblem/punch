@@ -8,6 +8,7 @@ enum class PlayType {
   CHECK,
   RAISE,
   FOLD,
+  ALL_IN, // all of the players health is on the line
 };
 
 #endif

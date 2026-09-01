@@ -37,11 +37,15 @@ enum class SuitType {
   SPADES,
 };
 
+struct Card {
+  CardType type;
+  SuitType suit;
+};
+
 // ... okay I want to use 🂡 🂱 🃁 🃑
-constexpr std::string_view getCardDesign(CardType cardType,
-                                         SuitType suitType) noexcept {
-  if (suitType == SuitType::CLUBS) {
-    switch (cardType) {
+constexpr std::string_view getCardDesign(const Card &card) noexcept {
+  if (card.suit == SuitType::CLUBS) {
+    switch (card.type) {
     case CardType::ACE:
       return "🃑";
       break;
@@ -84,8 +88,8 @@ constexpr std::string_view getCardDesign(CardType cardType,
     }
   }
 
-  if (suitType == SuitType::DIAMONDS) {
-    switch (cardType) {
+  if (card.suit == SuitType::DIAMONDS) {
+    switch (card.type) {
     case CardType::ACE:
       return "🃁";
       break;
@@ -128,8 +132,8 @@ constexpr std::string_view getCardDesign(CardType cardType,
     }
   }
 
-  if (suitType == SuitType::HEARTS) {
-    switch (cardType) {
+  if (card.suit == SuitType::HEARTS) {
+    switch (card.type) {
     case CardType::ACE:
       return "🂱";
       break;
@@ -172,8 +176,8 @@ constexpr std::string_view getCardDesign(CardType cardType,
     }
   }
 
-  if (suitType == SuitType::SPADES) {
-    switch (cardType) {
+  if (card.suit == SuitType::SPADES) {
+    switch (card.type) {
     case CardType::ACE:
       return "🂡";
       break;
@@ -225,15 +229,17 @@ inline std::mt19937 &rng() {
 }
 
 inline std::vector<std::string_view> getRandomPair() {
+  const int SIZE = 2;
   std::uniform_int_distribution<int> suitDis(0, 3);
   std::uniform_int_distribution<int> cardDis(0, 12);
 
   std::vector<std::string_view> cards;
   cards.reserve(2);
-  for (int i = 0; i < 2; ++i) {
-    cards.push_back(getCardDesign(static_cast<CardType>(cardDis(rng())),
-                                  static_cast<SuitType>(suitDis(rng()))));
+  for (int i = 0; i < SIZE; ++i) {
+    cards.push_back(getCardDesign(Card{static_cast<CardType>(cardDis(rng())),
+                                       static_cast<SuitType>(suitDis(rng()))}));
   }
+
   return cards;
 }
 

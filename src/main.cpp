@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
       {"--start", []() { screenHandler(MenuState::START); }},
       {"--help", []() { screenHandler(MenuState::HELP); }},
       {"--version", []() { screenHandler(MenuState::VERSION); }},
+      {"--random-card", []() { screenHandler(MenuState::RANDOM); }},
   };
 
   auto startCaller = [&](const std::string &message) {
