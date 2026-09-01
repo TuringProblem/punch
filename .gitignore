@@ -1,7 +1,13 @@
-/.projectile
+# build output
 /build/
-/compile_commands.json
-/build-cmake/
+/build-*/
 /out/
+/compile_commands.json
+
+# editor / tooling
+/.projectile
 /.cache/
+
+# macOS
 .DS_Store
+**/.DS_Store
