@@ -98,8 +98,7 @@ inline std::string cardsOf(const Card *cards, int count) {
 }
 
 // Human at the keyboard. Prints its own prompt and reads a choice.
-struct HumanAgent : Agent {
-  Action act(const HandState &hand, const Game &game, int seatIndex) override {
+inline Action humanAct(const HandState &hand, const Game &game, int seatIndex) {
     const Seat &seat = hand.seats[static_cast<std::size_t>(seatIndex)];
     const Player &me = game.players[static_cast<std::size_t>(seat.id)];
     const int owed = toCall(hand, seatIndex);
@@ -138,10 +137,66 @@ struct HumanAgent : Agent {
       }
       return Action{ActionType::RAISE, amount};
     }
-    return owed > 0 ? Action{ActionType::CALL, 0}
-                    : Action{ActionType::CHECK, 0};
-  }
-};
+  return owed > 0 ? Action{ActionType::CALL, 0}
+                  : Action{ActionType::CHECK, 0};
+}
+
+inline int humanPickTarget(const HandState &hand, const Game &game,
+                           int seatIndex) {
+    const std::vector<int> targets = targetsFor(hand, game, seatIndex);
+    if (targets.empty())
+      return -1;
+
+    std::cout << "\n  You won. Who eats it?\n";
+    for (std::size_t i = 0; i < targets.size(); ++i) {
+      const Seat &seat = hand.seats[static_cast<std::size_t>(targets[i])];
+      const Player &player = game.players[static_cast<std::size_t>(seat.id)];
+      std::cout << std::format(
+          "   {}. {:<10} {} HP   hits for {} HP{}\n", i + 1, player.name,
+          player.health, punchDamage(hand, targets[i]),
+          player.canBlock() ? std::format("   ({} blocks)", player.blocks)
+                            : "   (no blocks left)");
+    }
+    std::cout << "  > ";
+
+    int choice = 0;
+    if (!(std::cin >> choice)) {
+      std::cin.clear();
+      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+      return targets.front();
+    }
+    if (choice < 1 || choice > static_cast<int>(targets.size()))
+      return targets.front();
+  return targets[static_cast<std::size_t>(choice - 1)];
+}
+
+inline GuardChoice humanGuard(const HandState &hand, const Game &game,
+                              int seatIndex, int attacker) {
+    const Seat &seat = hand.seats[static_cast<std::size_t>(seatIndex)];
+    const Player &me = game.players[static_cast<std::size_t>(seat.id)];
+    if (!me.canBlock()) {
+      std::cout << "\n  No blocks left. You are wide open.\n";
+      return GuardChoice::NO_BLOCK;
+    }
+
+    const Player &winner = game.players[static_cast<std::size_t>(
+        hand.seats[static_cast<std::size_t>(attacker)].id)];
+
+    std::cout << std::format(
+        "\n  {} won and is picking a target. You have {} blocks.\n",
+        winner.name, me.blocks);
+    std::cout << std::format("  Takes {} HP if it lands on you. Block? [y/n] > ",
+                             punchDamage(hand, seatIndex));
+
+    std::string answer;
+    if (!(std::cin >> answer))
+      return GuardChoice::NO_BLOCK;
+  return answer == "y" ? GuardChoice::BLOCK : GuardChoice::NO_BLOCK;
+}
+
+inline Agent makeHuman() {
+  return Agent{humanAct, humanPickTarget, humanGuard};
+}
 
 inline std::string_view actionName(const Action &action) {
   switch (action.type) {
@@ -182,98 +237,159 @@ inline Observer makeObserver() {
     std::cout << "\n";
   };
 
+  observer.onPunch = [](const HandState &hand, const Game &game,
+                        const PunchOutcome &out) {
+    const auto nameAt = [&](int seatIndex) -> const std::string & {
+      return game.players[static_cast<std::size_t>(
+          hand.seats[static_cast<std::size_t>(seatIndex)].id)].name;
+    };
+
+    std::cout << "\n===== PUNCH =====\n";
+    std::cout << std::format("  {} swings at {}.\n", nameAt(out.attacker),
+                             nameAt(out.target));
+
+    for (int i = 0; i < hand.seatCount(); ++i) {
+      if (i == out.attacker) continue;
+      const auto idx = static_cast<std::size_t>(i);
+      const bool blocked = out.guards[idx] == GuardChoice::BLOCK;
+      const Player &player =
+          game.players[static_cast<std::size_t>(hand.seats[idx].id)];
+
+      std::string note;
+      if (i == out.target && blocked) {
+        note = "BLOCKED IT   block kept";
+      } else if (i == out.target) {
+        note = std::format("EATS {} HP", out.damage);
+      } else if (blocked) {
+        note = "blocked nothing   -1 block";
+      } else {
+        note = "stood still";
+      }
+
+      std::cout << std::format("  {:<10} {:<26} {} HP, {} blocks{}\n",
+                               player.name, note, player.health, player.blocks,
+                               player.isKnockedOut ? "   KNOCKED OUT" : "");
+    }
+  };
+
   return observer;
 }
 
-inline void playOneHand(const Game &game) {
-  AgentTable agents;
-  for (const Player &player : game.players) {
-    if (player.isHuman) {
-      agents.push_back(std::make_unique<HumanAgent>());
+inline Observer makeGameObserver() {
+  Observer observer = makeObserver();
+
+  observer.onShowdown = [](const HandState &hand, const Game &game,
+                           const Showdown &result) {
+      const auto nameOf = [&](int seatIndex) -> const std::string & {
+      return game
+          .players[static_cast<std::size_t>(
+              hand.seats[static_cast<std::size_t>(seatIndex)].id)]
+          .name;
+    };
+
+    if (!result.contested) {
+      std::cout << std::format(
+          "\n  {} takes the {} HP punch pot, everyone else folded.\n",
+          nameOf(result.winners.front()), hand.punchPot());
     } else {
-      agents.push_back(std::make_unique<SimpleBot>());
-    }
-  }
-
-  HandState hand = startHand(game);
-  const Observer observer = makeObserver();
-  playHand(hand, game, agents, observer);
-
-  const Showdown result = resolveShowdown(hand);
-  const auto nameOf = [&](int seatIndex) -> const std::string & {
-    return game
-        .players[static_cast<std::size_t>(
-            hand.seats[static_cast<std::size_t>(seatIndex)].id)]
-        .name;
-  };
-
-  if (!result.contested) {
-    std::cout << std::format(
-        "\n  {} takes the {} HP punch pot, everyone else folded.\n",
-        nameOf(result.winners.front()), hand.punchPot());
-  } else {
-    std::cout << "\n  -- cards on their back --\n";
-    for (int i = 0; i < hand.seatCount(); ++i) {
-      const Seat &seat = hand.seats[static_cast<std::size_t>(i)];
-      if (!seat.inHand())
-        continue;
-      const HandRank &rank = result.best[static_cast<std::size_t>(i)];
-      std::cout << std::format("  {:<10} {}  {}\n", nameOf(i),
-                               cardsOf(seat.hole.data(), 2),
-                               categoryName(rank.cat));
-    }
-
-    for (std::size_t r = 0; r < result.tiebreak.size(); ++r) {
-      const TieRound &tie = result.tiebreak[r];
-      std::cout << std::format("\n  -- tied, redraw {} --\n", r + 1);
-      for (std::size_t i = 0; i < tie.seats.size(); ++i) {
-        std::cout << std::format("  {:<10} {}  {}\n", nameOf(tie.seats[i]),
-                                 cardsOf(tie.hole[i].data(), 2),
-                                 categoryName(tie.ranks[i].cat));
+      std::cout << "\n  -- cards on their back --\n";
+      for (int i = 0; i < hand.seatCount(); ++i) {
+        const Seat &seat = hand.seats[static_cast<std::size_t>(i)];
+        if (!seat.inHand())
+          continue;
+        const HandRank &rank = result.best[static_cast<std::size_t>(i)];
+        std::cout << std::format("  {:<10} {}  {}\n", nameOf(i),
+                                 cardsOf(seat.hole.data(), 2),
+                                 categoryName(rank.cat));
       }
-    }
 
-    if (result.unresolved) {
-      std::cout << "\n  Board can't be beaten, settled by seat position.\n";
-    }
-
-    std::cout << "\n  ";
-    if (result.winners.size() == 1) {
-      const int champ = result.winners.front();
-      Category won = result.best[static_cast<std::size_t>(champ)].cat;
-      if (!result.tiebreak.empty()) {
-        const TieRound &last = result.tiebreak.back();
-        for (std::size_t i = 0; i < last.seats.size(); ++i) {
-          if (last.seats[i] == champ)
-            won = last.ranks[i].cat;
+      for (std::size_t r = 0; r < result.tiebreak.size(); ++r) {
+        const TieRound &tie = result.tiebreak[r];
+        std::cout << std::format("\n  -- tied, redraw {} --\n", r + 1);
+        for (std::size_t i = 0; i < tie.seats.size(); ++i) {
+          std::cout << std::format("  {:<10} {}  {}\n", nameOf(tie.seats[i]),
+                                   cardsOf(tie.hole[i].data(), 2),
+                                   categoryName(tie.ranks[i].cat));
         }
       }
-      std::cout << std::format("{} wins the {} HP punch pot with {}.\n",
-                               nameOf(champ), hand.punchPot(),
-                               categoryName(won));
-    } else {
-      std::cout << "Tie between ";
-      for (std::size_t i = 0; i < result.winners.size(); ++i) {
-        std::cout << nameOf(result.winners[i])
-                  << (i + 1 < result.winners.size() ? ", " : "");
+
+      if (result.unresolved) {
+        std::cout << "\n  Board can't be beaten, settled by seat position.\n";
       }
-      std::cout << std::format(" for the {} HP punch pot.\n", hand.punchPot());
+
+      std::cout << "\n  ";
+      if (result.winners.size() == 1) {
+        const int champ = result.winners.front();
+        Category won = result.best[static_cast<std::size_t>(champ)].cat;
+        if (!result.tiebreak.empty()) {
+          const TieRound &last = result.tiebreak.back();
+          for (std::size_t i = 0; i < last.seats.size(); ++i) {
+            if (last.seats[i] == champ)
+              won = last.ranks[i].cat;
+          }
+        }
+        std::cout << std::format("{} wins the {} HP punch pot with {}.\n",
+                                 nameOf(champ), hand.punchPot(),
+                                 categoryName(won));
+      } else {
+        std::cout << "Tie between ";
+        for (std::size_t i = 0; i < result.winners.size(); ++i) {
+          std::cout << nameOf(result.winners[i])
+                    << (i + 1 < result.winners.size() ? ", " : "");
+        }
+        std::cout << std::format(" for the {} HP punch pot.\n", hand.punchPot());
+      }
     }
+
+  };
+
+  observer.onHandStart = [](const Game &game) {
+    std::cout << std::format("\n\n########## HAND {} ##########\n",
+                             game.handNumber);
+    for (const Player &player : game.players) {
+      if (player.isKnockedOut)
+        continue;
+      std::cout << std::format("  {:<10} {:>3} HP   {} blocks\n", player.name,
+                               player.health, player.blocks);
+    }
+  };
+
+  observer.onHandEnd = [](const Game &game) {
+    for (const Player &player : game.players) {
+      if (player.isKnockedOut)
+        continue;
+      if (player.isHuman && player.health > 0) {
+        std::cout << "\n  [enter] next hand > ";
+        std::string ignored;
+        std::getline(std::cin, ignored);
+        std::getline(std::cin, ignored);
+        return;
+      }
+    }
+  };
+
+  observer.onGameOver = [](const Game &game) {
+    const Player *winner = lastStanding(game);
+    std::cout << "\n\n";
+    if (winner) {
+      lineCreator(std::format("{} is the last one standing after {} hands",
+                              winner->name, game.handNumber));
+    } else {
+      lineCreator("Everyone is on the floor");
+    }
+  };
+
+  return observer;
+}
+
+inline void playGame(Game &game) {
+  AgentTable agents;
+  for (const Player &player : game.players) {
+    agents.push_back(player.isHuman ? makeHuman() : makeBot());
   }
 
-  std::cout << "\n  -- damage if punched --\n";
-  for (int i = 0; i < hand.seatCount(); ++i) {
-    const Seat &seat = hand.seats[static_cast<std::size_t>(i)];
-    const bool isWinner =
-        std::find(result.winners.begin(), result.winners.end(), i) !=
-        result.winners.end();
-    std::cout << std::format("  {:<10} {} HP{}\n", nameOf(i),
-                             std::max(MIN_PUNCH, seat.committed),
-                             isWinner ? "   (winner, throws the punch)"
-                             : seat.hasFolded() ? "   (folded)"
-                                                : "");
-  }
-  std::cout << "\n  [punch phase not wired yet]\n";
+  const Observer observer = makeGameObserver();
+  runGame(game, agents, observer);
 }
 
 inline void runStart(const std::string &devtag) {
@@ -297,9 +413,9 @@ inline void runStart(const std::string &devtag) {
   }
   switch (choice) {
   case 1: {
-    const Game game = createGame(userName, promptTableSize());
+    Game game = createGame(userName, promptTableSize());
     renderRoster(game);
-    playOneHand(game);
+    playGame(game);
     break;
   }
   case 2:

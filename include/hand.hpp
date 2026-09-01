@@ -42,7 +42,7 @@ constexpr std::string_view streetName(Street street) noexcept {
 }
 
 struct HandState {
-  Deck deck;
+  Deck deck = makeDeck();
   std::vector<Seat> seats;
 
   std::array<Card, 5> board{};
@@ -139,11 +139,11 @@ inline HandState startHand(const Game &game) {
     }
   }
 
-  hand.deck.shuffle();
+  shuffleDeck(hand.deck);
 
   for (int round = 0; round < 2; ++round) {
     for (Seat &seat : hand.seats) {
-      seat.hole[static_cast<std::size_t>(round)] = hand.deck.deal();
+      seat.hole[static_cast<std::size_t>(round)] = dealCard(hand.deck);
     }
   }
 
@@ -164,24 +164,24 @@ inline void beginStreet(HandState &hand, const Game &game) {
 }
 
 inline void dealFlop(HandState &hand) {
-  hand.deck.burn();
+  burnCard(hand.deck);
   for (int i = 0; i < 3; ++i) {
-    hand.board[static_cast<std::size_t>(i)] = hand.deck.deal();
+    hand.board[static_cast<std::size_t>(i)] = dealCard(hand.deck);
   }
   hand.boardCount = 3;
   hand.street = Street::FLOP;
 }
 
 inline void dealTurn(HandState &hand) {
-  hand.deck.burn();
-  hand.board[3] = hand.deck.deal();
+  burnCard(hand.deck);
+  hand.board[3] = dealCard(hand.deck);
   hand.boardCount = 4;
   hand.street = Street::TURN;
 }
 
 inline void dealRiver(HandState &hand) {
-  hand.deck.burn();
-  hand.board[4] = hand.deck.deal();
+  burnCard(hand.deck);
+  hand.board[4] = dealCard(hand.deck);
   hand.boardCount = 5;
   hand.street = Street::RIVER;
 }

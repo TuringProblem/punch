@@ -9,53 +9,53 @@
 
 /**
  * @author: { @Override } : 20260831
- * -----
- *  One real 52 card deck. Dealing walks a cursor forward instead of picking
- *  at random, so the same card can never come out twice in a hand.
  *
- *  Texas Hold'em needs exactly one deck. A multi deck shoe would allow five
- *  of a kind and break every hand ranking.
+ * One real 52 card deck. Dealing walks a cursor forward instead of picking
+ * at random, so the same card can never come out twice in a hand.
+ *
+ * Hold'em needs exactly one deck. A multi deck shoe would allow five of a
+ * kind and break every hand ranking.
  **/
 
-class Deck {
-public:
-  static constexpr std::size_t DECK_SIZE = 52;
-  static constexpr int SUIT_COUNT = 4;
-  static constexpr int RANK_COUNT = 13;
+inline constexpr std::size_t DECK_SIZE = 52;
+inline constexpr int SUIT_COUNT = 4;
+inline constexpr int RANK_COUNT = 13;
 
-  Deck() { reset(); }
-
-  void reset() noexcept {
-    std::size_t i = 0;
-    for (int suit = 0; suit < SUIT_COUNT; ++suit) {
-      for (int rank = 0; rank < RANK_COUNT; ++rank) {
-        cards_[i++] =
-            Card{static_cast<CardType>(rank), static_cast<SuitType>(suit)};
-      }
-    }
-    next_ = 0;
-  }
-
-  void shuffle() {
-    std::shuffle(cards_.begin(), cards_.end(), rng());
-    next_ = 0;
-  }
-
-  Card deal() {
-    assert(next_ < DECK_SIZE && "dealt past the end of the deck");
-    return cards_[next_++];
-  }
-
-  void burn() {
-    assert(next_ < DECK_SIZE && "burned past the end of the deck");
-    ++next_;
-  }
-
-  std::size_t remaining() const noexcept { return DECK_SIZE - next_; }
-
-private:
-  std::array<Card, DECK_SIZE> cards_{};
-  std::size_t next_ = 0;
+struct Deck {
+  std::array<Card, DECK_SIZE> cards{};
+  std::size_t next = 0;
 };
 
-#endif
+inline Deck makeDeck() noexcept {
+  Deck deck;
+  std::size_t i = 0;
+  for (int suit = 0; suit < SUIT_COUNT; ++suit) {
+    for (int rank = 0; rank < RANK_COUNT; ++rank) {
+      deck.cards[i++] =
+          Card{static_cast<CardType>(rank), static_cast<SuitType>(suit)};
+    }
+  }
+  return deck;
+}
+
+inline std::size_t cardsLeft(const Deck &deck) noexcept {
+  return DECK_SIZE - deck.next;
+}
+
+inline void shuffleDeck(Deck &deck) {
+  std::shuffle(deck.cards.begin(), deck.cards.end(), rng());
+  deck.next = 0;
+}
+
+inline Card dealCard(Deck &deck) {
+  assert(deck.next < DECK_SIZE && "dealt past the end of the deck");
+  return deck.cards[deck.next++];
+}
+
+// Poker burns one card before the flop, turn and river.
+inline void burnCard(Deck &deck) {
+  assert(deck.next < DECK_SIZE && "burned past the end of the deck");
+  ++deck.next;
+}
+
+#endif // DECK_HPP

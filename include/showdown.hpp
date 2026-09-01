@@ -95,7 +95,7 @@ inline Showdown resolveShowdown(HandState &hand) {
   int round = 0;
   while (result.winners.size() > 1 && round < MAX_TIE_ROUNDS) {
     const std::size_t needed = result.winners.size() * 2;
-    if (hand.deck.remaining() < needed) {
+    if (cardsLeft(hand.deck) < needed) {
       result.unresolved = true;
       break;
     }
@@ -103,7 +103,7 @@ inline Showdown resolveShowdown(HandState &hand) {
     TieRound tie;
     tie.seats = result.winners;
     for (std::size_t i = 0; i < tie.seats.size(); ++i) {
-      const std::array<Card, 2> fresh{hand.deck.deal(), hand.deck.deal()};
+      const std::array<Card, 2> fresh{dealCard(hand.deck), dealCard(hand.deck)};
       tie.hole.push_back(fresh);
       tie.ranks.push_back(rankWith(hand, fresh));
     }
