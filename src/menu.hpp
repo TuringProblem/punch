@@ -7,6 +7,7 @@
 #include "game.hpp"
 #include "hand.hpp"
 #include "player.hpp"
+#include "render.hpp"
 #include "showdown.hpp"
 #include <algorithm>
 #include <chrono>
@@ -88,24 +89,15 @@ inline void renderRoster(const Game &game) {
                            game.seatCount(), game.players[game.button].name);
 }
 
-inline std::string cardsOf(const Card *cards, int count) {
-  std::string out;
-  for (int i = 0; i < count; ++i) {
-    out += getCardDesign(cards[i]);
-    out += " ";
-  }
-  return out;
-}
-
 // Human at the keyboard. Prints its own prompt and reads a choice.
 inline Action humanAct(const HandState &hand, const Game &game, int seatIndex) {
     const Seat &seat = hand.seats[static_cast<std::size_t>(seatIndex)];
     const Player &me = game.players[static_cast<std::size_t>(seat.id)];
     const int owed = toCall(hand, seatIndex);
 
-    std::cout << std::format("\n  Your hand: {}   {} HP, {} blocks\n",
-                             cardsOf(seat.hole.data(), 2), me.health,
+    std::cout << std::format("\n  {} - {} HP, {} blocks\n", me.name, me.health,
                              me.blocks);
+    std::cout << cardRow(seat.hole.data(), 2);
     std::cout << std::format("  Punch pot: {} HP   committed: {} HP\n",
                              hand.punchPot(), seat.committed);
 
@@ -215,12 +207,11 @@ inline std::string_view actionName(const Action &action) {
 inline Observer makeObserver() {
   Observer observer;
 
-  observer.onStreet = [](const HandState &hand, const Game &game) {
+  observer.onStreet = [](const HandState &hand, const Game &) {
     std::cout << std::format("\n===== {} =====   punch pot: {} HP\n",
                              streetName(hand.street), hand.punchPot());
     if (hand.boardCount > 0) {
-      std::cout << "  Board: " << cardsOf(hand.board.data(), hand.boardCount)
-                << "\n";
+      std::cout << "\n" << cardRow(hand.board.data(), hand.boardCount);
     }
   };
 
@@ -298,18 +289,18 @@ inline Observer makeGameObserver() {
         if (!seat.inHand())
           continue;
         const HandRank &rank = result.best[static_cast<std::size_t>(i)];
-        std::cout << std::format("  {:<10} {}  {}\n", nameOf(i),
-                                 cardsOf(seat.hole.data(), 2),
+        std::cout << std::format("\n  {} - {}\n", nameOf(i),
                                  categoryName(rank.cat));
+        std::cout << cardRow(seat.hole.data(), 2);
       }
 
       for (std::size_t r = 0; r < result.tiebreak.size(); ++r) {
         const TieRound &tie = result.tiebreak[r];
         std::cout << std::format("\n  -- tied, redraw {} --\n", r + 1);
         for (std::size_t i = 0; i < tie.seats.size(); ++i) {
-          std::cout << std::format("  {:<10} {}  {}\n", nameOf(tie.seats[i]),
-                                   cardsOf(tie.hole[i].data(), 2),
+          std::cout << std::format("\n  {} - {}\n", nameOf(tie.seats[i]),
                                    categoryName(tie.ranks[i].cat));
+          std::cout << cardRow(tie.hole[i].data(), 2);
         }
       }
 
@@ -385,7 +376,8 @@ inline Observer makeGameObserver() {
 inline void playGame(Game &game) {
   AgentTable agents;
   for (const Player &player : game.players) {
-    agents.push_back(player.isHuman ? makeHuman() : makeBot());
+    agents.push_back(player.isHuman ? makeHuman()
+                                    : makeBot(static_cast<int>(player.id)));
   }
 
   const Observer observer = makeGameObserver();

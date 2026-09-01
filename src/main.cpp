@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "menu.hpp"
+#include "platform.hpp"
 
 #include <map>
 
@@ -14,6 +15,7 @@
 
 // mmmm... what do I want to map...  the command "--start"
 int main(int argc, char **argv) {
+  initConsole();
 
   std::map<std::string, void (*)()> commands = {
       {"--start", []() { screenHandler(MenuState::START); }},

@@ -52,10 +52,9 @@ inline Card dealCard(Deck &deck) {
   return deck.cards[deck.next++];
 }
 
-// Poker burns one card before the flop, turn and river.
 inline void burnCard(Deck &deck) {
   assert(deck.next < DECK_SIZE && "burned past the end of the deck");
   ++deck.next;
 }
 
-#endif // DECK_HPP
+#endif
